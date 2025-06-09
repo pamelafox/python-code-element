@@ -178,4 +178,4 @@ export class CodeExerciseElement extends LitElement {
 	}
 }
 
-customElements.define('code-exercise-element', CodeExerciseElement);
+window.customElements.define('code-exercise-element', CodeExerciseElement);
