@@ -23726,7 +23726,7 @@ ${disLine}
 
     async function loadPyodideScript() {
       const versionMap = {
-        3.11: 'dev',
+        3.11: 'v0.24.0',
         '3.10': 'v0.22.1',
         3.9: 'v0.19.1',
       };
