@@ -73,26 +73,22 @@ function cleanupDoctestResults(resultsStr) {
 			keptLines.push(line);
 		}
 	});
-	return keptLines.join('\n');
+	return keptLines.join('\n').trim();
 }
 
-export function prepareCode(submittedCode, codeHeader) {
-	submittedCode += '\n';
-	let lines = codeHeader.split('\n');
-	const startLine = countDocstringLines(lines);
-	const codeLines = submittedCode.split('\n');
-	if (!(codeLines[0].includes('def') || codeLines[0].includes('class'))) {
+export function prepareCode(code) {
+	const lines = code.split('\n');
+	if (!(lines[0].includes('def') || lines[0].includes('class'))) {
 		return {
 			status: 'fail',
 			header: 'Error running tests',
 			details: 'First code line must be `def` or `class` declaration',
 		};
 	}
-	// Remove function def or class declaration statement, its relied on elsewhere
-	codeLines.shift();
 
-	let line = findNextUnindentedLine(codeLines, 0);
-	if (line != codeLines.length) {
+	// Find any code lines that aren't properly indented
+	let line = findNextUnindentedLine(lines, 1);  // Start after def/class line
+	if (line != lines.length) {
 		return {
 			status: 'fail',
 			header: 'Error running tests',
@@ -100,19 +96,9 @@ export function prepareCode(submittedCode, codeHeader) {
 				'All lines in a function or class definition should be indented at least once. It looks like you have a line that has no indentation.',
 		};
 	}
-	const linesToPreserve = lines.slice(0, startLine);
-	const endOfReplaceLines = findNextUnindentedLine(lines, startLine);
-	const extraLinesToPreserve = lines.slice(endOfReplaceLines);
-	let finalCode = [];
-	linesToPreserve.forEach((line) => {
-		finalCode.push(line);
-	});
-	codeLines.forEach((line) => {
-		finalCode.push(line);
-	});
-	extraLinesToPreserve.forEach((line) => {
-		finalCode.push(line);
-	});
+
+	let finalCode = [...lines];  // Copy the lines array
+
 	// Redirects stdout so we can return it
 	finalCode.push('import sys');
 	finalCode.push('import io');
@@ -126,7 +112,7 @@ export function prepareCode(submittedCode, codeHeader) {
 		status: 'success',
 		header: 'Running tests...',
 		code: finalCode,
-		startLine: startLine,
+		startLine: 0,  // Line numbers now match original code
 	};
 }
 

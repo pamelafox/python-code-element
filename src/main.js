@@ -1,11 +1,17 @@
-import HighlightableEditor from './highlightable-editor.js';
+import {get, set} from './user-storage.js';
+import {
+	prepareCode,
+	processTestResults,
+	processTestError,
+} from './doctest-grader.js';
+import './code-exercise.js';
+import {FiniteWorker} from './finite-worker.js';
 
-async function main() {
-  let pyodide, editor;
-  const codeDiv = document.getElementById('code-area');
-  const button = document.getElementById('button');
-  const statusDiv = document.getElementById('status');
-  const code = `def lesser_num(num1, num2):
+const LS_REPR = '-repr';
+let probEl;
+
+export function initWidget() {
+  const startingCode = `def lesser_num(num1, num2):
     """ Returns whichever number is lowest of the two supplied numbers.
 
     >>> lesser_num(45, 10)
@@ -17,25 +23,35 @@ async function main() {
     """
     # YOUR CODE HERE`;
 
-  async function loadPyodideScript() {
-    const scriptUrl = 'https://cdn.jsdelivr.net/pyodide/v0.27.6/full/pyodide.js';
-    const script = document.createElement('script');
-    script.src = scriptUrl;
-    script.onload = async () => {
-      pyodide = await loadPyodide({
-        indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.27.6/full/'
-      });
-      statusDiv.innerText = '';
-      button.removeAttribute('disabled');
-      button.addEventListener('click', runCode);
-      
-    };
-    document.head.appendChild(script);
-  }
-
-  editor = new HighlightableEditor(codeDiv, code);
-
-  await loadPyodideScript();
+  probEl = document.createElement('code-exercise-element');
+  probEl.setAttribute('code', startingCode);
+  probEl.addEventListener('run', (e) => {
+    handleSubmit(e.detail.code);
+  });
+  document.getElementById('code-exercise-wrapper').appendChild(probEl);
 }
 
-main();
+async function handleSubmit(submittedCode) {
+	let testResults = prepareCode(submittedCode);
+
+	if (testResults.code) {
+		try {
+			const code = testResults.code + '\nsys.stdout.getvalue()';
+			const {results, error} = await new FiniteWorker(code);
+			if (results) {
+				testResults = processTestResults(results);
+			} else {
+				testResults = processTestError(error, testResults.startLine);
+			}
+		} catch (e) {
+			console.warn(
+				`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`
+			);
+		}
+	}
+
+	probEl.setAttribute('runStatus', '');
+	probEl.setAttribute('resultsStatus', testResults.status);
+	probEl.setAttribute('resultsHeader', testResults.header);
+	probEl.setAttribute('resultsDetails', testResults.details);
+}

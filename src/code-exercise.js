@@ -1,20 +1,17 @@
-/* global ParsonsWidget */
-
 import {LitElement, html, css} from 'lit';
-import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 import {ref, createRef} from 'lit/directives/ref.js';
+import {basicSetup} from 'codemirror';
+import {EditorState} from '@codemirror/state';
+import {python} from '@codemirror/lang-python';
+import {EditorView} from '@codemirror/view';
 
 import './loader-element.js';
 import './test-results-element.js';
 
-export class ProblemElement extends LitElement {
+export class CodeExerciseElement extends LitElement {
 	static properties = {
-		name: {type: String},
-		description: {type: String},
-		codeLines: {type: String},
-		codeHeader: {type: String},
+		code: {type: String},
 		isLoading: {type: Boolean},
-		enableRun: {type: Boolean, default: false},
 		runStatus: {type: String},
 		resultsStatus: {type: String},
 		resultsHeader: {type: String},
@@ -22,58 +19,43 @@ export class ProblemElement extends LitElement {
 	};
 
 	static styles = css`
-		.starter {
-			width: 40%;
+		.editor-area {
+			width: 100%;
+			margin: 10px 0;
 		}
-		.solution {
-			width: 58%;
-			margin-left: 2%;
+		.cm-editor {
+			border: 1px solid #ccc;
+			border-radius: 4px;
 		}
 	`;
 
-	starterRef = createRef();
-	solutionRef = createRef();
+	editorRef = createRef();
+	editor = null;
 
 	createRenderRoot() {
 		return this;
 	}
 
 	render() {
-		let results =
-			'Test results will appear here after clicking "Run Tests" above.';
-		if (this.resultsStatus) {
+		let results = null;
+		if (!this.resultsStatus) {
+			results = 'Test results will appear here after clicking "Run Tests" above.';
+		} else if (this.resultsStatus === 'fail') {
 			results = html`<test-results-element
 				status=${this.resultsStatus}
 				header=${this.resultsHeader}
 				details=${this.resultsDetails}
 			></test-results-element>`;
+		} else if (this.resultsStatus === 'pass') {
+			results = ''; // Hide results when all tests pass
 		}
 
 		return html`
-			<div class="row mt-3">
-				<div class="col-sm-12">
-					<div class="card">
-						<div class="card-header">
-							<h3>Problem Statement</h3>
-						</div>
-						<div class="card-body">${unsafeHTML(this.description)}</div>
-					</div>
-				</div>
-			</div>
-
 			<div class="row mt-4">
 				<div class="col-sm-12">
 					<div class="card">
 						<div class="card-body">
-							<div
-								${ref(this.starterRef)}
-								class="sortable-code starter"
-							></div>
-							<div
-								${ref(this.solutionRef)}
-								class="sortable-code solution"
-							></div>
-							<div style="clear:both"></div>
+							<div ${ref(this.editorRef)} class="editor-area"></div>
 							<div class="row float-right">
 								<div class="col-sm-12">
 									<span style="margin-right: 8px">
@@ -85,7 +67,6 @@ export class ProblemElement extends LitElement {
 										@click=${this.onRun}
 										type="button"
 										class="btn btn-primary"
-										?disabled=${!this.enableRun}
 									>
 										Run Tests
 									</button>
@@ -96,6 +77,7 @@ export class ProblemElement extends LitElement {
 				</div>
 			</div>
 
+			${results ? html`
 			<div class="row mt-4">
 				<div class="col-sm-12">
 					<div class="card">
@@ -108,29 +90,36 @@ export class ProblemElement extends LitElement {
 					</div>
 				</div>
 			</div>
+			` : ''}
 		`;
 	}
 
 	firstUpdated() {
-		this.parsonsWidget = new ParsonsWidget({
-			sortableId: this.solutionRef.value,
-			trashId: this.starterRef.value,
+		const state = EditorState.create({
+			doc: this.code || '',
+			extensions: [
+				basicSetup,
+				python(),
+				EditorView.lineWrapping,
+			]
 		});
-		this.parsonsWidget.init(this.codeLines);
-		this.parsonsWidget.alphabetize();
+
+		this.editor = new EditorView({
+			state: state,
+			parent: this.editorRef.value
+		});
 	}
 
 	onRun() {
-		this.runStatus = 'Running code...';
+		this.runStatus = 'Running tests...';
 		this.dispatchEvent(
 			new CustomEvent('run', {
 				detail: {
-					code: this.parsonsWidget.solutionCode(),
-					repr: this.parsonsWidget.reprCode(),
+					code: this.editor.state.doc.toString()
 				},
 			})
 		);
 	}
 }
 
-customElements.define('problem-element', ProblemElement);
+customElements.define('code-exercise-element', CodeExerciseElement);

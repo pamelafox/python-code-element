@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <link rel="preconnect" href="https://fonts.gstatic.com" />
-    <title>Dis This: Online Python Disassembler</title>
+    <title>Python code editor</title>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
@@ -14,52 +14,22 @@
         height: auto;
         border: 1px solid #ccc;
       }
-      #table-area {
-        margin-top: 15px;
-        margin-bottom: 12px;
-        max-width: 700px;
-      }
-      #input-area {
-        float: left;
-        width: 48%;
-        position: sticky;
-        top: 0;
-      }
-      #output-area {
-        float: right;
-        margin-left: 20px;
-        width: 48%;
-      }
-      #output-area, #error-area {
-        margin-top: 15px;
-      }
-      #error-area {
-        max-width: 700px;
-      }
-      footer {
-        clear: both;
-        margin-top: 80px;
+      #code-exercise-wrapper {
+        width: 100%;
+        height: 600px;
       }
     </style>
     <style></style>
   </head>
   <body>
     <div class="container">
-      <h1>Python code editor</h1>
-      <br/>
-      <div id="code-area"></div>
-      <br />
-      <button id="button" type="button" class="btn btn-primary" disabled>
-        Run
-      </button>
-      <span id="status">Loading Pyodide...</span>
-
-      <pre id="error-area"  style="display: none;">
-      </pre>
+      <h1>Python code editor example</h1>
+      <div id="code-exercise-wrapper"></div>
     </div>
+    <script type="module">
+    import {initWidget} from "./dist/bundle.js";
 
-      <div id="output-area" style="display: none;">
-      </div>
-    <script src="dist/bundle.js"></script>
+    initWidget();
+    </script>
   </body>
 </html>
