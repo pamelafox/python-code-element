@@ -1,143 +1,3 @@
-function findNextUnindentedLine(lines, start) {
-	/*
-    Finds the next piece of unindented code in the file. Ignores empty lines and lines
-    that start with a space or tab. Returns len(lines) if no unindented line found.
-    */
-	let lineNum = start;
-	while (lineNum < lines.length) {
-		const line = lines[lineNum];
-		if (!(line == '' || line[0] == ' ' || line[0] == '\t' || line[0] == '\n')) {
-			break;
-		}
-		lineNum++;
-	}
-	return lineNum;
-}
-
-function extractError(error, numDocstringLines) {
-	let startI = -1;
-	let endI = -1;
-	let lineNum;
-	const errorLines = error.split('\n');
-	for (var i = errorLines.length - 1; i >= 0; i--) {
-		let line = errorLines[i];
-		if (line.startsWith('SyntaxError') || line.startsWith('IndentationError')) {
-			endI = i;
-		} else if (line.includes('File "<exec>", line')) {
-			lineNum = parseInt(line.split(', line ')[1], 10);
-			lineNum -= numDocstringLines - 1;
-			startI = i;
-			break;
-		}
-	}
-	if (startI == -1 || endI == -1) {
-		return 'No error report found.';
-	} else {
-		return (
-			`Error at line ${lineNum}:\n` +
-			errorLines.slice(startI + 1, endI + 1).join('\n')
-		);
-	}
-}
-
-function cleanupDoctestResults(resultsStr) {
-	let keptLines = [];
-	let inKeepRange = false;
-	resultsStr.split('\n').forEach((line) => {
-		if (line.startsWith('File "__main__"')) {
-			inKeepRange = true;
-			return;
-		} else if (
-			line.startsWith('Trying:') ||
-			line.startsWith('1 items had no tests:')
-		) {
-			inKeepRange = false;
-		}
-		if (inKeepRange) {
-			line = line.replace('Failed example:', '\n❌ Failed example:');
-			keptLines.push(line);
-		}
-	});
-	return keptLines.join('\n').trim();
-}
-
-function prepareCode(code) {
-	const lines = code.split('\n');
-	if (!(lines[0].includes('def') || lines[0].includes('class'))) {
-		return {
-			status: 'fail',
-			header: 'Error running tests',
-			details: 'First code line must be `def` or `class` declaration',
-		};
-	}
-
-	// Find any code lines that aren't properly indented
-	let line = findNextUnindentedLine(lines, 1);  // Start after def/class line
-	if (line != lines.length) {
-		return {
-			status: 'fail',
-			header: 'Error running tests',
-			details:
-				'All lines in a function or class definition should be indented at least once. It looks like you have a line that has no indentation.',
-		};
-	}
-
-	let finalCode = [...lines];  // Copy the lines array
-
-	// Redirects stdout so we can return it
-	finalCode.push('import sys');
-	finalCode.push('import io');
-	finalCode.push('sys.stdout = io.StringIO()');
-	// Runs the doctests
-	finalCode.push('import doctest');
-	finalCode.push('doctest.testmod(verbose=True)');
-	finalCode = finalCode.join('\n');
-
-	return {
-		status: 'success',
-		header: 'Running tests...',
-		code: finalCode,
-		startLine: 0,  // Line numbers now match original code
-	};
-}
-
-function processTestResults(outputStr) {
-	const summaryRe = /(\d+)\spassed\sand\s(\d+)\sfailed./;
-	const summaryMatches = outputStr.match(summaryRe);
-	if (summaryMatches) {
-		const successCount = parseInt(summaryMatches[1], 10);
-		const failCount = parseInt(summaryMatches[2], 10);
-		const totalCount = successCount + failCount;
-		const doctestResults = cleanupDoctestResults(outputStr);
-		return {
-			status: successCount == totalCount ? 'pass' : 'fail',
-			header: `${successCount} of ${totalCount} tests passed`,
-			details: doctestResults,
-		};
-	}
-}
-
-function processTestError(error, startLine) {
-	if (error.message.startsWith('Traceback')) {
-		return {
-			status: 'fail',
-			header: 'Syntax error',
-			details: extractError(error.message, startLine),
-		};
-	} else if (error.message == 'Infinite loop') {
-		return {
-			status: 'fail',
-			header: 'Infinite loop',
-			details:
-				'Your code did not finish executing within 60 seconds. Please look to see if you accidentally coded an infinite loop.',
-		};
-	}
-	return {
-		status: 'fail',
-		header: 'Unexpected error occurred',
-	};
-}
-
 /**
  * @license
  * Copyright 2019 Google LLC
@@ -23183,169 +23043,145 @@ function python() {
     return new LanguageSupport(pythonLanguage);
 }
 
-class LoaderElement extends s {
-	static styles = r$4`
-		.loader {
-			border: 4px solid #f3f3f3;
-			border-radius: 50%;
-			border-top: 4px solid #444444;
-			width: 6px;
-			height: 6px;
-			animation: spin 1s linear infinite;
-			display: inline-block;
+function findNextUnindentedLine(lines, start) {
+	/*
+    Finds the next piece of unindented code in the file. Ignores empty lines and lines
+    that start with a space or tab. Returns len(lines) if no unindented line found.
+    */
+	let lineNum = start;
+	while (lineNum < lines.length) {
+		const line = lines[lineNum];
+		if (!(line == '' || line[0] == ' ' || line[0] == '\t' || line[0] == '\n')) {
+			break;
 		}
-
-		@keyframes spin {
-			100% {
-				transform: rotate(360deg);
-			}
-		}
-	`;
-
-	render() {
-		return $`<div class="loader"></div>`;
+		lineNum++;
 	}
+	return lineNum;
 }
 
-customElements.define('loader-element', LoaderElement);
-
-class TestResultsElement extends s {
-	static properties = {
-		status: {type: String},
-		header: {type: String},
-		details: {type: String},
-	};
-
-	createRenderRoot() {
-		return this;
-	}
-
-	render() {
-		return $`<div class="testcase ${this.status}">
-						<span class="msg">${this.header}</span>
-						</div>
-						<pre><code>${this.details}</code></pre></div>
-					</div>`;
-	}
-}
-
-customElements.define('test-results-element', TestResultsElement);
-
-class CodeExerciseElement extends s {
-	static properties = {
-		code: {type: String},
-		isLoading: {type: Boolean},
-		runStatus: {type: String},
-		resultsStatus: {type: String},
-		resultsHeader: {type: String},
-		resultsDetails: {type: String},
-	};
-
-	static styles = r$4`
-		.editor-area {
-			width: 100%;
-			margin: 10px 0;
+function extractError(error, numDocstringLines) {
+	let startI = -1;
+	let endI = -1;
+	let lineNum;
+	const errorLines = error.split('\n');
+	for (var i = errorLines.length - 1; i >= 0; i--) {
+		let line = errorLines[i];
+		if (line.startsWith('SyntaxError') || line.startsWith('IndentationError')) {
+			endI = i;
+		} else if (line.includes('File "<exec>", line')) {
+			lineNum = parseInt(line.split(', line ')[1], 10);
+			lineNum -= numDocstringLines - 1;
+			startI = i;
+			break;
 		}
-		.cm-editor {
-			border: 1px solid #ccc;
-			border-radius: 4px;
-		}
-	`;
-
-	editorRef = e();
-	editor = null;
-
-	createRenderRoot() {
-		return this;
 	}
-
-	render() {
-		let results = null;
-		if (!this.resultsStatus) {
-			results = 'Test results will appear here after clicking "Run Tests" above.';
-		} else if (this.resultsStatus === 'fail') {
-			results = $`<test-results-element
-				status=${this.resultsStatus}
-				header=${this.resultsHeader}
-				details=${this.resultsDetails}
-			></test-results-element>`;
-		} else if (this.resultsStatus === 'pass') {
-			results = ''; // Hide results when all tests pass
-		}
-
-		return $`
-			<div class="row mt-4">
-				<div class="col-sm-12">
-					<div class="card">
-						<div class="card-body">
-							<div ${n(this.editorRef)} class="editor-area"></div>
-							<div class="row float-right">
-								<div class="col-sm-12">
-									<span style="margin-right: 8px">
-										${this.runStatus &&
-										$`<loader-element></loader-element>`}
-										${this.runStatus}
-									</span>
-									<button
-										@click=${this.onRun}
-										type="button"
-										class="btn btn-primary"
-									>
-										Run Tests
-									</button>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			${results ? $`
-			<div class="row mt-4">
-				<div class="col-sm-12">
-					<div class="card">
-						<div class="card-header">
-							<h4>Test Cases</h4>
-						</div>
-						<div id="test_description">
-							<div class="card-body">${results}</div>
-						</div>
-					</div>
-				</div>
-			</div>
-			` : ''}
-		`;
-	}
-
-	firstUpdated() {
-		const state = EditorState.create({
-			doc: this.code || '',
-			extensions: [
-				basicSetup,
-				python(),
-				EditorView.lineWrapping,
-			]
-		});
-
-		this.editor = new EditorView({
-			state: state,
-			parent: this.editorRef.value
-		});
-	}
-
-	onRun() {
-		this.runStatus = 'Running tests...';
-		this.dispatchEvent(
-			new CustomEvent('run', {
-				detail: {
-					code: this.editor.state.doc.toString()
-				},
-			})
+	if (startI == -1 || endI == -1) {
+		return 'No error report found.';
+	} else {
+		return (
+			`Error at line ${lineNum}:\n` +
+			errorLines.slice(startI + 1, endI + 1).join('\n')
 		);
 	}
 }
 
-customElements.define('code-exercise-element', CodeExerciseElement);
+function cleanupDoctestResults(resultsStr) {
+	let keptLines = [];
+	let inKeepRange = false;
+	resultsStr.split('\n').forEach((line) => {
+		if (line.startsWith('File "__main__"')) {
+			inKeepRange = true;
+			return;
+		} else if (
+			line.startsWith('Trying:') ||
+			line.startsWith('1 items had no tests:')
+		) {
+			inKeepRange = false;
+		}
+		if (inKeepRange) {
+			line = line.replace('Failed example:', '\n❌ Failed test:');
+			keptLines.push(line);
+		}
+	});
+	return keptLines.join('\n').trim();
+}
+
+function prepareCode(code) {
+	const lines = code.split('\n');
+	if (!(lines[0].includes('def') || lines[0].includes('class'))) {
+		return {
+			status: 'fail',
+			header: 'Error running tests',
+			details: 'First code line must be `def` or `class` declaration',
+		};
+	}
+
+	// Find any code lines that aren't properly indented
+	let line = findNextUnindentedLine(lines, 1);  // Start after def/class line
+	if (line != lines.length) {
+		return {
+			status: 'fail',
+			header: 'Error running tests',
+			details:
+				'All lines in a function or class definition should be indented at least once. It looks like you have a line that has no indentation.',
+		};
+	}
+
+	let finalCode = [...lines];  // Copy the lines array
+
+	// Redirects stdout so we can return it
+	finalCode.push('import sys');
+	finalCode.push('import io');
+	finalCode.push('sys.stdout = io.StringIO()');
+	// Runs the doctests
+	finalCode.push('import doctest');
+	finalCode.push('doctest.testmod(verbose=True)');
+	finalCode = finalCode.join('\n');
+
+	return {
+		status: 'success',
+		header: 'Running tests...',
+		code: finalCode,
+		startLine: 0,  // Line numbers now match original code
+	};
+}
+
+function processTestResults(outputStr) {
+	const summaryRe = /(\d+)\spassed\sand\s(\d+)\sfailed./;
+	const summaryMatches = outputStr.match(summaryRe);
+	if (summaryMatches) {
+		const successCount = parseInt(summaryMatches[1], 10);
+		const failCount = parseInt(summaryMatches[2], 10);
+		const totalCount = successCount + failCount;
+		const doctestResults = cleanupDoctestResults(outputStr);
+		return {
+			status: successCount == totalCount ? 'pass' : 'fail',
+			header: `${successCount} of ${totalCount} tests passed`,
+			details: doctestResults,
+		};
+	}
+}
+
+function processTestError(error, startLine) {
+	if (error.message.startsWith('Traceback')) {
+		return {
+			status: 'fail',
+			header: 'Syntax error',
+			details: extractError(error.message, startLine),
+		};
+	} else if (error.message == 'Infinite loop') {
+		return {
+			status: 'fail',
+			header: 'Infinite loop',
+			details:
+				'Your code did not finish executing within 60 seconds. Please look to see if you accidentally coded an infinite loop.',
+		};
+	}
+	return {
+		status: 'fail',
+		header: 'Unexpected error occurred',
+	};
+}
 
 class FiniteWorker {
 	constructor(code) {
@@ -23374,6 +23210,230 @@ class FiniteWorker {
 	}
 }
 
+const veryLocalStorage = {};
+
+function supportsStorage() {
+	try {
+		return 'localStorage' in window && window['localStorage'] !== null;
+	} catch (e) {
+		return false;
+	}
+}
+
+function get(key, defaultValue) {
+	let value;
+	if (!supportsStorage()) {
+		value = veryLocalStorage[key];
+	} else {
+		value = localStorage.getItem(key);
+	}
+	return value === null || typeof value === 'undefined' ? defaultValue : value;
+}
+
+function set(key, value) {
+	if (!supportsStorage()) {
+		veryLocalStorage[key] = value;
+	} else {
+		localStorage.setItem(key, value);
+	}
+}
+
+class LoaderElement extends s {
+	static styles = r$4`
+		.loader {
+			border: 4px solid #f3f3f3;
+			border-radius: 50%;
+			border-top: 4px solid #444444;
+			width: 6px;
+			height: 6px;
+			animation: spin 1s linear infinite;
+			display: inline-block;
+		}
+
+		@keyframes spin {
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+	`;
+
+	render() {
+		return $`<div class="loader"></div>`;
+	}
+}
+
+customElements.define('loader-element', LoaderElement);
+
+class CodeExerciseElement extends s {
+	static properties = {
+		starterCode: {type: String},
+		exerciseName: {type: String},
+		isLoading: {type: Boolean},
+		runStatus: {type: String},
+		resultsStatus: {type: String},
+		resultsHeader: {type: String},
+		resultsDetails: {type: String},
+	};
+
+	static styles = r$4`
+		.editor-area {
+			width: 100%;
+			margin: 10px 0;
+		}
+		.cm-editor {
+			border: 1px solid #ccc;
+			border-radius: 4px;
+		}
+	`;
+
+	editorRef = e();
+	editor = null;
+
+	createRenderRoot() {
+		return this;
+	}
+
+	render() {
+		let results = null;
+		if (this.resultsStatus === 'fail') {
+			results = $`<pre class="mb-0"><code>${this.resultsDetails}</code></pre>`;
+		}
+
+		return $`
+			<div class="card">
+				<div class="card-body">
+					<div ${n(this.editorRef)} class="editor-area"></div>
+					<div class="d-flex justify-content-between align-items-center mt-3">
+						<div>
+							<button
+								@click=${this.onRun}
+								type="button"
+								class="btn btn-primary"
+							>
+								Run Tests
+							</button>
+							<span style="margin-left: 8px">
+								${this.runStatus &&
+								$`<loader-element></loader-element>`}
+								${this.runStatus}
+							</span>
+						</div>
+						<div>
+							<button
+								@click=${this.resetCode}
+								type="button"
+								class="btn btn-secondary"
+								title="Reset code to starter code"
+							>
+								Reset
+							</button>
+						</div>
+					</div>
+					${results ? $`
+						<div class="mt-4">
+							<h4>Test results (${this.resultsHeader})</h4>
+							<div class="mt-2 bg-light rounded p-3">
+								${results}
+							</div>
+						</div>
+					` : ''}
+				</div>
+			</div>
+		`;
+	}
+
+	getStorageKey() {
+		return this.exerciseName ? `${this.exerciseName}-repr` : null;
+	}
+
+	firstUpdated() {
+		const key = this.getStorageKey();
+		// Try to get stored code for this exercise
+		const storedCode = key ? get(key) : null;
+		if (storedCode) {
+			console.log(`Loading stored code in localStorage from ${key}`);
+		} else if (!key) {
+			console.log('No exercise name provided, code will not be stored');
+		} else {
+			console.log(`No stored code found for ${key}, using starter code. Your code changes will be stored in localStorage.`);
+		}
+		
+		const state = EditorState.create({
+			doc: storedCode || this.starterCode || '',
+			extensions: [
+				basicSetup,
+				python(),
+				EditorView.lineWrapping,
+				EditorView.updateListener.of((update) => {
+					const key = this.getStorageKey();
+					if (update.docChanged && key) {
+						// Save code when it changes
+						set(key, update.state.doc.toString());
+					}
+				})
+			]
+		});
+
+		this.editor = new EditorView({
+			state: state,
+			parent: this.editorRef.value
+		});
+	}
+
+	onRun() {
+		this.runStatus = 'Running tests...';
+		this.handleSubmit(this.editor.state.doc.toString());
+	}
+
+	async handleSubmit(submittedCode) {
+		let testResults = prepareCode(submittedCode);
+
+		if (testResults.code) {
+			try {
+				const code = testResults.code + '\nsys.stdout.getvalue()';
+				const {results, error} = await new FiniteWorker(code);
+				if (results) {
+					testResults = processTestResults(results);
+				} else {
+					testResults = processTestError(error, testResults.startLine);
+				}
+			} catch (e) {
+				console.warn(
+					`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`
+				);
+			}
+		}
+
+		this.runStatus = '';
+		this.resultsStatus = testResults.status;
+		this.resultsHeader = testResults.header;
+		this.resultsDetails = testResults.details;
+	}
+
+	async resetCode() {
+		if (confirm('Are you sure you want to reset your code to the starter code? This cannot be undone.')) {
+			console.log('Resetting code to starter code');
+			const state = EditorState.create({
+				doc: this.starterCode || '',
+				extensions: [
+					basicSetup,
+					python(),
+					EditorView.lineWrapping,
+				]
+			});
+			this.editor.setState(state);
+
+			// Clear stored code if it exists
+			const key = this.getStorageKey();
+			if (key) {
+				set(key, this.starterCode);
+			}
+		}
+	}
+}
+
+customElements.define('code-exercise-element', CodeExerciseElement);
+
 let probEl;
 
 function initWidget() {
@@ -23390,36 +23450,9 @@ function initWidget() {
     # YOUR CODE HERE`;
 
   probEl = document.createElement('code-exercise-element');
-  probEl.setAttribute('code', startingCode);
-  probEl.addEventListener('run', (e) => {
-    handleSubmit(e.detail.code);
-  });
+  probEl.setAttribute('starterCode', startingCode);
+  probEl.setAttribute('exerciseName', 'lesser-num');
   document.getElementById('code-exercise-wrapper').appendChild(probEl);
-}
-
-async function handleSubmit(submittedCode) {
-	let testResults = prepareCode(submittedCode);
-
-	if (testResults.code) {
-		try {
-			const code = testResults.code + '\nsys.stdout.getvalue()';
-			const {results, error} = await new FiniteWorker(code);
-			if (results) {
-				testResults = processTestResults(results);
-			} else {
-				testResults = processTestError(error, testResults.startLine);
-			}
-		} catch (e) {
-			console.warn(
-				`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`
-			);
-		}
-	}
-
-	probEl.setAttribute('runStatus', '');
-	probEl.setAttribute('resultsStatus', testResults.status);
-	probEl.setAttribute('resultsHeader', testResults.header);
-	probEl.setAttribute('resultsDetails', testResults.details);
 }
 
 export { initWidget };

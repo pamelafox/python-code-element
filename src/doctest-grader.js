@@ -69,7 +69,7 @@ function cleanupDoctestResults(resultsStr) {
 			inKeepRange = false;
 		}
 		if (inKeepRange) {
-			line = line.replace('Failed example:', '\n❌ Failed example:');
+			line = line.replace('Failed example:', '\n❌ Failed test:');
 			keptLines.push(line);
 		}
 	});
