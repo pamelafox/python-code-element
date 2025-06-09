@@ -45,63 +45,21 @@
   </head>
   <body>
     <div class="container">
-      <h1>Disassemble Python code</h1>
+      <h1>Python code editor</h1>
       <br/>
-      <div id="input-area">
-      <label>Major Python version:
-        <select id="version-select">
-          <option selected>3.11</option>
-          <option>3.10</option>
-          <option>3.9</option>
-        </select>
-        <em>(Changing will reload the page)</em>
-      </label>
-      <br/>
-      <label id="adaptive-area" style="display:block;">Enable adaptive interpreter?
-        <input id="adaptive-checkbox" type="checkbox" checked/>
-      </label>
-      <br/>
-      <label>Python function definition:
-        <br />
-        <div id="code-area"></div>
-      </label><br/>
-      <label>Function call:
-        <br />
-        <input id="call-input" type="text" />
-      </label>
+      <div id="code-area"></div>
       <br />
       <button id="button" type="button" class="btn btn-primary" disabled>
-        Disassemble!
+        Run
       </button>
       <span id="status">Loading Pyodide...</span>
 
       <pre id="error-area"  style="display: none;">
       </pre>
-      
     </div>
 
       <div id="output-area" style="display: none;">
-        <div id="permalink-area"></div>
-        <p>Python version: <span id="version-number"></span></p>
-        <div id="table-area"></div>
       </div>
-
-      <footer>
-        <p>
-          Source code on
-          <a href="https://github.com/pamelafox/dis-this" target="_blank">
-          Github</a>.
-          Uses
-          <a href="https://pyodide.org/en/stable/" target="_blank">Pyodide</a>,
-          <a href="https://docs.python.org/3/library/dis.html" target="_blank">the Python dis module</a>,
-          <a href="https://codemirror.net/" target="_blank">CodeMirror</a>,
-          and <a href="https://lit.dev/" target="_blank">Lit elements</a>.
-          <br />
-          Inspired by Anthony Shaw's
-          <a href="https://pypi.org/project/instaviz/" target="_blank">Instaviz</a>.
-        </p>
-      </div>
-    </div>
     <script src="dist/bundle.js"></script>
   </body>
 </html>
