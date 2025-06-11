@@ -21,11 +21,8 @@
   <body>
     <div class="container">
       <h1>Python code editor example</h1>
-      <div id="code-exercise-wrapper"></div>
-    </div>
-    <script type="module" src="code-exercise.bundled.js"></script>
-    <script type="module">
-  const startingCode = `def lesser_num(num1, num2):
+      <code-exercise-element exercise-name="lesser-num">
+def lesser_num(num1, num2):
     """ Returns whichever number is lowest of the two supplied numbers.
 
     >>> lesser_num(45, 10)
@@ -35,12 +32,10 @@
     >>> lesser_num(20, 20)
     20
     """
-    # YOUR CODE HERE`;
-
-  const probEl = document.createElement('code-exercise-element');
-  probEl.setAttribute('starterCode', startingCode);
-  probEl.setAttribute('exerciseName', 'lesser-num');
-  document.getElementById('code-exercise-wrapper').appendChild(probEl);
-    </script>
+    # YOUR CODE HERE
+      </code-exercise-element>
+    </div>
+    <script src="dist/code-exercise.umd.js"></script>
+    <!--<script src="https://cdn.jsdelivr.net/npm/python-code-exercise-element@0.1.1/dist/code-exercise.umd.min.js"></script>-->
   </body>
 </html>

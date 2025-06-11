@@ -14,21 +14,6 @@ function findNextUnindentedLine(lines, start) {
 	return lineNum;
 }
 
-function countDocstringLines(lines) {
-	let startLine = -1;
-	let inDocstring = false;
-	lines.forEach((line, i) => {
-		if (line.trim().includes('"""')) {
-			if (inDocstring) {
-				startLine = i + 1;
-				return;
-			}
-			inDocstring = true;
-		}
-	});
-	return startLine;
-}
-
 function extractError(error, numDocstringLines) {
 	let startI = -1;
 	let endI = -1;
