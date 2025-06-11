@@ -1,21 +1,32 @@
-import resolve from '@rollup/plugin-node-resolve';
 import terser from '@rollup/plugin-terser';
-import json from '@rollup/plugin-json';
+import resolve from '@rollup/plugin-node-resolve';
+import copy from 'rollup-plugin-copy';
+import webWorkerLoader from 'rollup-plugin-web-worker-loader';
 
-// `npm run build` -> `production` is true
-// `npm run dev` -> `production` is false
-const production = !process.env.ROLLUP_WATCH;
+import pkg from './package.json';
 
 export default {
-  input: 'src/main.js',
+  input: 'src/code-exercise.js',
   output: {
-    file: 'dist/bundle.js',
-    format: 'iife',
-    sourcemap: true,
+    name: 'CodeExerciseElement',
+    file: pkg.browser,
+    format: 'umd',
   },
   plugins: [
-    json(),
-    resolve(), // tells Rollup how to find date-fns in node_modules
-    production && terser(), // minify, but only in production
+    webWorkerLoader(/* configuration */),
+    resolve(),
+    terser({
+      ecma: 2021,
+      module: true,
+      warnings: true,
+      mangle: {
+        properties: {
+          regex: /^__/,
+        },
+      },
+    }),
+	copy({
+		targets: [{src: 'src/worker.js', dest: 'dist/'}],
+	}),
   ],
 };

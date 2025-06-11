@@ -1,24 +1,35 @@
 {
-  "name": "dis-this",
-  "repository": "https://github.com/pamelafox/dis-this",
+  "name": "python-code-exercise-element",
+  "version": "0.1.4",
+  "description": "A web component for Python coding exercises with doctest runner",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pamelafox/codemirror-pyodide-editor.git"
+  },
   "license": "Apache-2.0",
+  "module": "src/code-exercise.js",
+  "browser": "dist/code-exercise.umd.js",
+  "type": "module",
   "devDependencies": {
-    "@babel/eslint-parser": "^7.17.0",
     "@babel/core": "^7.11.0",
-    "@rollup/plugin-node-resolve": "^11.1.0",
-    "@rollup/plugin-terser": "^0.4.0",
+    "@babel/eslint-parser": "^7.17.0",
     "@rollup/plugin-json": "^6.0.0",
-    "npm-run-all": "^4.1.5",
-    "rollup": "^2.36.2",
-    "serve": "^11.3.2",
+    "@rollup/plugin-node-resolve": "^11.1.0",
+    "@rollup/plugin-terser": "^0.4.4",
     "eslint": "^8.15.0",
+    "lit-analyzer": "^2.0.3",
+    "npm-run-all": "^4.1.5",
     "prettier": "^2.6.2",
-    "lit-analyzer": "^1.2.1"
+    "rollup": "^2.36.2",
+    "rollup-plugin-copy": "^3.5.0",
+    "serve": "^14.2.4"
   },
   "dependencies": {
     "@codemirror/lang-python": "^6.0.0",
+    "@webcomponents/webcomponentsjs": "^2.8.0",
     "codemirror": "^6.0.0",
-    "lit": "^2.2.4"
+    "lit": "^2.2.4",
+    "rollup-plugin-web-worker-loader": "^1.7.0"
   },
   "scripts": {
     "lint": "npm run lint:lit-analyzer && npm run lint:eslint",
@@ -29,5 +40,10 @@
     "watch": "rollup -c -w",
     "dev": "npm-run-all --parallel start watch",
     "start": "serve"
-  }
+  },
+  "files": [
+    "src/*.js",
+    "README.md",
+    "LICENSE"
+  ]
 }
