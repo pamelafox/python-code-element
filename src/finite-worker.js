@@ -6,7 +6,7 @@ export class FiniteWorker {
 
 		this.worker = new PyodideWorker();
 		this.worker.onmessage = this.handleMessage.bind(this);
-
+		this.stdout = '';
 		return new Promise((resolve) => {
 			window.setTimeout(this.finishIt.bind(this), 1000 * 60);
 			this.worker.postMessage(code);
@@ -23,6 +23,11 @@ export class FiniteWorker {
 
 	handleMessage(event) {
 		this.gotCalledBack = true;
-		this.resolve(event.data);
+		if (event.data.stdout) {
+			this.stdout += event.data.stdout;
+			return;
+		} else {
+			this.resolve({error: event?.data?.error, results: event?.data?.results, stdout: this.stdout});
+		}
 	}
 }

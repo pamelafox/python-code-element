@@ -1,9 +1,13 @@
 /* global loadPyodide, importScripts */
 
-importScripts('https://cdn.jsdelivr.net/pyodide/v0.21.1/full/pyodide.js');
+importScripts('https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js');
 
 async function loadPyodideAndRemember() {
-	self.pyodide = await loadPyodide();
+	self.pyodide = await loadPyodide({
+		stdout: function(line) {
+			self.postMessage({stdout: line});
+		},
+	});
 }
 let pyodideReadyPromise = loadPyodideAndRemember();
 

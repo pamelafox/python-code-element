@@ -3,7 +3,9 @@ import {ref, createRef} from 'lit/directives/ref.js';
 import {basicSetup} from 'codemirror';
 import {EditorState} from '@codemirror/state';
 import {python} from '@codemirror/lang-python';
-import {EditorView} from '@codemirror/view';
+import {EditorView, keymap} from '@codemirror/view';
+import {indentWithTab} from "@codemirror/commands"
+import { indentUnit } from "@codemirror/language";
 import {prepareCode, processTestResults, processTestError} from './doctest-grader.js';
 import {FiniteWorker} from './finite-worker.js';
 import {get, set} from './user-storage.js';
@@ -13,12 +15,14 @@ import './loader-element.js';
 export class CodeExerciseElement extends LitElement {
 	static properties = {
 		starterCode: {type: String},
-		exerciseName: {type: String},
+		exerciseName: {type: String, attribute: 'name'},
 		isLoading: {type: Boolean},
 		runStatus: {type: String},
 		resultsStatus: {type: String},
 		resultsHeader: {type: String},
 		resultsDetails: {type: String},
+		runOutput: {type: String},
+		showTests: {type: Boolean, attribute: 'show-tests'},
 	};
 
 	static styles = css`
@@ -62,12 +66,25 @@ export class CodeExerciseElement extends LitElement {
 					<div class="d-flex justify-content-between align-items-center mt-3">
 						<div>
 							<button
-								@click=${this.onRun}
+								@click=${this.onRunCode}
 								type="button"
-								class="btn btn-primary"
+								class="btn me-2"
+								style="background-color: #d1e1f0;"
+								aria-label="Run code"
 							>
-								Run Tests
+								▶️ Run Code
 							</button>
+							${this.showTests ? html`
+								<button
+									@click=${this.onRun}
+									type="button"
+									class="btn"
+									style="background-color: #a4d8ae;"
+									aria-label="Run tests"
+								>
+									🧪 Run Tests
+								</button>
+							` : ''}
 							<span style="margin-left: 8px">
 								${this.runStatus &&
 								html`<loader-element></loader-element>`}
@@ -85,6 +102,22 @@ export class CodeExerciseElement extends LitElement {
 							</button>
 						</div>
 					</div>
+					${this.runOutput ? html`
+						<div class="mt-4">
+							<h4>Value of final expression</h4>
+							<div class="mt-2 bg-light rounded p-3">
+								<pre class="mb-0"><code>${this.runOutput}</code></pre>
+							</div>
+						</div>
+					` : ''}
+					${this.runStdout ? html`
+						<div class="mt-4">
+							<h4>Standard output (i.e. from print statements)</h4>
+							<div class="mt-2 bg-light rounded p-3">
+								<pre class="mb-0"><code>${this.runStdout}</code></pre>
+							</div>
+						</div>
+					` : ''}
 					${results ? html`
 						<div class="mt-4">
 							<h4>Test results (${this.resultsHeader})</h4>
@@ -119,6 +152,8 @@ export class CodeExerciseElement extends LitElement {
 			extensions: [
 				basicSetup,
 				python(),
+				keymap.of([indentWithTab]),
+				indentUnit.of('    '), // Use 4 spaces for indentation
 				EditorView.lineWrapping,
 				EditorView.updateListener.of((update) => {
 					const key = this.getStorageKey();
@@ -132,7 +167,7 @@ export class CodeExerciseElement extends LitElement {
 
 		this.editor = new EditorView({
 			state: state,
-			parent: this.editorRef.value
+			parent: this.editorRef.value,
 		});
 	}
 
@@ -141,18 +176,39 @@ export class CodeExerciseElement extends LitElement {
 		this.handleSubmit(this.editor.state.doc.toString());
 	}
 
+	async onRunCode() {
+		this.runStatus = 'Running code...';
+		this.resultsStatus = '';  // Clear any previous test results
+		const code = this.editor.state.doc.toString();
+		try {
+			const {results, error, stdout} = await new FiniteWorker(code);
+			this.runOutput = error || results || '';
+			this.runStdout = stdout || '';
+		} catch (e) {
+			console.warn(
+				`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`
+			);
+			this.runOutput = `Error: ${e.message}`;
+		}
+		this.runStatus = '';
+	}
+
 	async handleSubmit(submittedCode) {
+		this.runOutput = '';
+		this.runStdout = '';
+
 		let testResults = prepareCode(submittedCode);
 
 		if (testResults.code) {
 			try {
 				const code = testResults.code + '\nsys.stdout.getvalue()';
-				const {results, error} = await new FiniteWorker(code);
+				const {results, error, stdout} = await new FiniteWorker(code);
 				if (results) {
 					testResults = processTestResults(results);
 				} else {
 					testResults = processTestError(error, testResults.startLine);
 				}
+				this.runStdout = stdout || '';
 			} catch (e) {
 				console.warn(
 					`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`
@@ -168,7 +224,6 @@ export class CodeExerciseElement extends LitElement {
 
 	async resetCode() {
 		if (confirm('Are you sure you want to reset your code to the starter code? This cannot be undone.')) {
-			console.log('Resetting code to starter code');
 			const state = EditorState.create({
 				doc: this.starterCode || '',
 				extensions: [
