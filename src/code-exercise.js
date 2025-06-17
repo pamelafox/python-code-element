@@ -182,7 +182,7 @@ export class CodeExerciseElement extends LitElement {
 		const code = this.editor.state.doc.toString();
 		try {
 			const {results, error, stdout} = await new FiniteWorker(code);
-			this.runOutput = error || results || '';
+			this.runOutput = error?.message || results || '';
 			this.runStdout = stdout || '';
 		} catch (e) {
 			console.warn(
