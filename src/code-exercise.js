@@ -18,9 +18,9 @@ export class CodeExerciseElement extends LitElement {
 		exerciseName: {type: String, attribute: 'name'},
 		isLoading: {type: Boolean},
 		runStatus: {type: String},
-		resultsStatus: {type: String},
-		resultsHeader: {type: String},
-		resultsDetails: {type: String},
+		testResultsStatus: {type: String},
+		testResultsHeader: {type: String},
+		testResultsDetails: {type: String},
 		runOutput: {type: String},
 		showTests: {type: Boolean, attribute: 'show-tests'},
 	};
@@ -54,11 +54,6 @@ export class CodeExerciseElement extends LitElement {
 	}
 
 	render() {
-		let results = null;
-		if (this.resultsStatus === 'fail') {
-			results = html`<pre class="mb-0"><code>${this.resultsDetails}</code></pre>`;
-		}
-
 		return html`
 			<div class="card">
 				<div class="card-body">
@@ -118,12 +113,17 @@ export class CodeExerciseElement extends LitElement {
 							</div>
 						</div>
 					` : ''}
-					${results ? html`
+					${this.testResultsStatus ? html`
 						<div class="mt-4">
-							<h4>Test results (${this.resultsHeader})</h4>
-							<div class="mt-2 bg-light rounded p-3">
-								${results}
-							</div>
+							<h4>Test results (${this.testResultsHeader})</h4>
+							${this.testResultsStatus === 'pass' ? html`
+								<div class="alert alert-success mt-2" role="alert">
+									🎉 Congratulations, all tests passed! 
+								</div>
+							` : html`
+								<div class="mt-2 bg-light rounded p-3">
+									<pre class="mb-0"><code>${this.testResultsDetails}</code></pre>
+								</div>`}
 						</div>
 					` : ''}
 				</div>
@@ -178,12 +178,18 @@ export class CodeExerciseElement extends LitElement {
 
 	async onRunCode() {
 		this.runStatus = 'Running code...';
-		this.resultsStatus = '';  // Clear any previous test results
+		this.testResultsStatus = '';
 		const code = this.editor.state.doc.toString();
 		try {
 			const {results, error, stdout} = await new FiniteWorker(code);
 			this.runOutput = error?.message || results || '';
 			this.runStdout = stdout || '';
+			if (!this.runOutput && !this.runStdout) {
+				this.runOutput = 'No output from code execution.\n';
+				if (this.showTests) {
+					this.runOutput += 'To check if your function code is correct, select "Run Tests" button instead.';
+				}
+			}
 		} catch (e) {
 			console.warn(
 				`Error in pyodideWorker at ${e.filename}, Line: ${e.lineno}, ${e.message}`
@@ -217,9 +223,9 @@ export class CodeExerciseElement extends LitElement {
 		}
 
 		this.runStatus = '';
-		this.resultsStatus = testResults.status;
-		this.resultsHeader = testResults.header;
-		this.resultsDetails = testResults.details;
+		this.testResultsStatus = testResults.status;
+		this.testResultsHeader = testResults.header;
+		this.testResultsDetails = testResults.details;
 	}
 
 	async resetCode() {
