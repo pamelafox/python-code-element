@@ -14,7 +14,7 @@ Add the script to your HTML:
 ```
 
 Then use the component in your HTML:
-```html
+
 <code-exercise-element name="exercise-name" show-tests>
 def my_function(param):
     """ A function that does something.
@@ -24,6 +24,23 @@ def my_function(param):
     """
     # YOUR CODE HERE
 </code-exercise-element>
+
+The component will preserve whitespace and indentation in the code, so you can write the Python code naturally in your HTML.
+
+I recommend using CSS to style the code elements so that they look like code blocks before they get turned into a CodeMirror editor. That will avoid any layout shifts when the editor is initialized.
+
+```css
+code-exercise-element {
+    white-space: pre;
+    font-family: monospace;
+}
+```
+To style the CodeMirror editor that loads inside the element, include a CSS rule that targets the `.cm-editor` class:
+
+```css
+code-exercise-element .cm-editor {
+    border: 1px solid #ccc;
+}
 ```
 
 ### Attributes
