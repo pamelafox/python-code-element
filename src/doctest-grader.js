@@ -1,19 +1,3 @@
-function findNextUnindentedLine(lines, start) {
-  /*
-    Finds the next piece of unindented code in the file. Ignores empty lines and lines
-    that start with a space or tab. Returns len(lines) if no unindented line found.
-    */
-  let lineNum = start;
-  while (lineNum < lines.length) {
-    const line = lines[lineNum];
-    if (!(line == '' || line[0] == ' ' || line[0] == '\t' || line[0] == '\n')) {
-      break;
-    }
-    lineNum++;
-  }
-  return lineNum;
-}
-
 function extractError(error, numDocstringLines) {
   let startI = -1;
   let endI = -1;
@@ -65,17 +49,6 @@ export function prepareCode(code) {
     };
   }
 
-  // Find any code lines that aren't properly indented
-  let line = findNextUnindentedLine(lines, 1); // Start after def/class line
-  if (line != lines.length) {
-    return {
-      status: 'fail',
-      header: 'Error running tests',
-      details:
-        'All lines in a function or class definition should be indented at least once. It looks like you have a line that has no indentation.',
-    };
-  }
-
   let finalCode = [...lines]; // Copy the lines array
 
   // Redirects stdout so we can return it
@@ -85,6 +58,7 @@ export function prepareCode(code) {
   // Runs the doctests
   finalCode.push('import doctest');
   finalCode.push('doctest.testmod(verbose=True)');
+  finalCode.push('sys.stdout.getvalue()');
   finalCode = finalCode.join('\n');
 
   return {

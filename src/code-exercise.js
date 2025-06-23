@@ -36,8 +36,8 @@ export class CodeExerciseElement extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     if (!this.starterCode && this.innerHTML.trim()) {
-      // Unescape the > signs in doctest output that get escaped by HTML parser
-      this.starterCode = this.innerHTML.trim().replace(/&gt;/g, '>');
+      // Unescape the HTML entities in doctest output that get escaped by HTML parser
+      this.starterCode = this.innerHTML.trim().replace(/&gt;/g, '>').replace(/&lt;/g, '<');
       // Clear the innerHTML since it will be displayed in the editor
       this.innerHTML = '';
     }
@@ -191,8 +191,7 @@ export class CodeExerciseElement extends LitElement {
 
     if (testResults.code) {
       try {
-        const code = testResults.code + '\nsys.stdout.getvalue()';
-        const {results, error, stdout} = await new FiniteWorker(code);
+        const {results, error, stdout} = await new FiniteWorker(testResults.code);
         if (results) {
           testResults = processTestResults(results);
         } else {
