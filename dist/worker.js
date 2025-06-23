@@ -16,10 +16,6 @@ self.onmessage = async (event) => {
   const python = event.data;
   try {
     let results = await self.pyodide.runPythonAsync(python);
-    // if results is an object, convert it to a string
-    if (typeof results === 'object' && results !== null) {
-      results = JSON.stringify(results, null, 2);
-    }
     self.postMessage({results});
   } catch (error) {
     self.postMessage({error: error});

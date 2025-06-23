@@ -6,14 +6,13 @@
     <title>Python code editor</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
     <style>
-      .cm-editor {
-        width: 100%;
-        height: auto;
-        border: 1px solid #ccc;
+      code-exercise-element {
+        white-space: pre;
+        font-family: monospace;
       }
-      #code-exercise-wrapper {
-        width: 100%;
-        height: 600px;
+
+      code-exercise-element .cm-editor {
+        border: 1px solid #ccc;
       }
     </style>
     <style></style>
@@ -22,22 +21,19 @@
     <div class="container">
       <h1>Python code editor example</h1>
       <code-exercise-element name="lesser-num" show-tests>
-def lesser_num(num1, num2):
-    """ Returns whichever number is lowest of the two supplied numbers.
+def tell_fortune(job_title, location, partner):
+    """ Returns a fortune of the form:
+     'You will be a &lt;job_title&gt; in &lt;location&gt; living with &lt;partner&gt;.'
 
-    >>> lesser_num(45, 10)
-    10
-    >>> lesser_num(-1, 30)
-    -1
-    >>> lesser_num(20, 20)
-    20
+    >>> tell_fortune('bball player', 'Spain', 'Sonic the Hedgehog')
+    'You will be a bball player in Spain living with Sonic the Hedgehog.'
+    >>> tell_fortune('farmer', 'Kansas', 'C3PO')
+    'You will be a farmer in Kansas living with C3PO.'
+    >>> tell_fortune('Elvis Impersonator', 'Russia', 'Karl the Fog')
+    'You will be a Elvis Impersonator in Russia living with Karl the Fog.'
     """
-    # YOUR CODE HERE
-
-print(4)
-
-2
-      </code-exercise-element>
+    return "?"  # YOUR CODE HERE
+  </code-exercise-element>
     </div>
     <script src="dist/code-exercise.umd.js"></script>
     <!--<script src="https://cdn.jsdelivr.net/npm/python-code-exercise-element@0.1.1/dist/code-exercise.umd.min.js"></script>-->

@@ -1,4 +1,4 @@
-import {LitElement, html, css} from 'lit';
+import {LitElement, html} from 'lit';
 import {ref, createRef} from 'lit/directives/ref.js';
 import {basicSetup} from 'codemirror';
 import {EditorState} from '@codemirror/state';
@@ -26,17 +26,6 @@ export class CodeExerciseElement extends LitElement {
     showTests: {type: Boolean, attribute: 'show-tests'},
   };
 
-  static styles = css`
-    .editor-area {
-      width: 100%;
-      margin: 10px 0;
-    }
-    .cm-editor {
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-  `;
-
   editorRef = createRef();
   editor = null;
 
@@ -52,13 +41,16 @@ export class CodeExerciseElement extends LitElement {
       // Clear the innerHTML since it will be displayed in the editor
       this.innerHTML = '';
     }
+    // Remove the pre style from the editor area
+    this.style.whiteSpace = 'normal';
+    this.style.fontFamily = 'inherit';
   }
 
   render() {
     return html`
       <div class="card">
         <div class="card-body">
-          <div ${ref(this.editorRef)} class="editor-area"></div>
+          <div ${ref(this.editorRef)} style="width: 100%; margin: 10px 0;"></div>
           <div class="d-flex justify-content-between align-items-center mt-3">
             <div>
               <button
