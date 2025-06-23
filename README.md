@@ -54,21 +54,30 @@ Run the development server (with hot reloading):
 npm run dev
 ```
 
-Lint the code:
+## Publishing
 
-```
-npm run lint
-```
+1. Lint the code:
 
-Format the code:
+    ```
+    npm run lint
+    ```
 
-```
-npm run format
-```
+2. Format the code:
 
-Build the production version:
+    ```
+    npm run format
+    ```
 
-```
-npm run build
-```
+3. Update the version in `package.json`
 
+4. Build the production version:
+
+    ```
+    npm run build
+    ```
+
+5. Publish to npm:
+
+    ```
+    npm publish
+    ```

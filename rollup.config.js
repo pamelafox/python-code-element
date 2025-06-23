@@ -25,8 +25,8 @@ export default {
         },
       },
     }),
-	copy({
-		targets: [{src: 'src/worker.js', dest: 'dist/'}],
-	}),
+    copy({
+      targets: [{src: 'src/worker.js', dest: 'dist/'}],
+    }),
   ],
 };
