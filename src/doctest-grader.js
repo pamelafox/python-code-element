@@ -41,20 +41,13 @@ function cleanupDoctestResults(resultsStr) {
 
 export function prepareCode(code) {
   const lines = code.split('\n');
-  if (!(lines[0].includes('def') || lines[0].includes('class'))) {
-    return {
-      status: 'fail',
-      header: 'Error running tests',
-      details: 'First code line must be `def` or `class` declaration',
-    };
-  }
-
-  let finalCode = [...lines]; // Copy the lines array
+  let finalCode = [...lines];
 
   // Redirects stdout so we can return it
   finalCode.push('import sys');
   finalCode.push('import io');
   finalCode.push('sys.stdout = io.StringIO()');
+
   // Runs the doctests
   finalCode.push('import doctest');
   finalCode.push('doctest.testmod(verbose=True)');
